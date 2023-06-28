@@ -6,13 +6,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
+
 import it.polito.tdp.yelp.model.Business;
 import it.polito.tdp.yelp.model.Review;
 import it.polito.tdp.yelp.model.User;
 
 public class YelpDao {
 	
-	
+	TreeMap<String, Business> idMap;
 	public List<Business> getAllBusiness(){
 		String sql = "SELECT * FROM Business";
 		List<Business> result = new ArrayList<Business>();
@@ -48,6 +50,47 @@ public class YelpDao {
 		}
 	}
 	
+	public List<Business> getBusiness(String s){
+		String sql = "SELECT * "
+				+ "FROM business b "
+				+ "WHERE b.city = ?";
+		List<Business> result = new ArrayList<Business>();
+		Connection conn = DBConnect.getConnection();
+		idMap = new TreeMap<>();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, s);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				Business business = new Business(res.getString("business_id"), 
+						res.getString("full_address"),
+						res.getString("active"),
+						res.getString("categories"),
+						res.getString("city"),
+						res.getInt("review_count"),
+						res.getString("business_name"),
+						res.getString("neighborhoods"),
+						res.getDouble("latitude"),
+						res.getDouble("longitude"),
+						res.getString("state"),
+						res.getDouble("stars"));
+				idMap.put(business.getBusinessName(), business);
+				result.add(business);
+			}
+			res.close();
+			st.close();
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	
 	public List<Review> getAllReviews(){
 		String sql = "SELECT * FROM Reviews";
 		List<Review> result = new ArrayList<Review>();
@@ -55,6 +98,41 @@ public class YelpDao {
 
 		try {
 			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				Review review = new Review(res.getString("review_id"), 
+						res.getString("business_id"),
+						res.getString("user_id"),
+						res.getDouble("stars"),
+						res.getDate("review_date").toLocalDate(),
+						res.getInt("votes_funny"),
+						res.getInt("votes_useful"),
+						res.getInt("votes_cool"),
+						res.getString("review_text"));
+				result.add(review);
+			}
+			res.close();
+			st.close();
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public List<Review> getReviews(Business b){
+		String sql = "SELECT * "
+				+ "FROM business b, reviews r "
+				+ "WHERE b.business_id = ? AND b.business_id = r.business_id";
+		List<Review> result = new ArrayList<Review>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, b.getBusinessId());
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
 
@@ -99,6 +177,30 @@ public class YelpDao {
 						res.getInt("review_count"));
 				
 				result.add(user);
+			}
+			res.close();
+			st.close();
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public List<String> getCity(){
+		String sql = "SELECT DISTINCT b.city "
+				+ "FROM business b";
+		List<String> result = new ArrayList<String>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				result.add(res.getString("city"));
 			}
 			res.close();
 			st.close();
